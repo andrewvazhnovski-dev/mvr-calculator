@@ -3,146 +3,225 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minimum Viable Rate (MVR) Calculator | For Freelancers</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
-      rel="stylesheet"
-    />
+    <title>MVR Calculator | Minimum Viable Rate</title>
     <style>
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #0f172a;
-        color: #f8fafc;
+      :root {
+        --bg-dark: #0f172a;
+        --panel-bg: #1e293b;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --accent: #3b82f6;
+        --border: #334155;
       }
-      .glass-panel {
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+      }
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        max-width: 900px;
+        width: 100%;
+      }
+      .left-panel,
+      .right-panel {
+        flex: 1;
+        min-width: 300px;
+        background: var(--panel-bg);
+        padding: 30px;
+        border-radius: 12px;
+      }
+      h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+      p.subtitle {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 25px;
+        line-height: 1.5;
+      }
+      .input-group {
+        margin-bottom: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 15px;
+      }
+      .row .input-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 8px;
+      }
+      input {
+        width: 100%;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 16px;
+        outline: none;
+        transition: border 0.2s;
+      }
+      input:focus {
+        border-color: var(--accent);
+      }
+      .right-panel {
+        border: 1px solid var(--accent);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        /* Защита от распирания контейнера */
+        overflow: hidden;
+      }
+      .result-header {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 15px;
+      }
+      .rate-display {
+        font-size: 64px;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1.1;
+        margin-bottom: 5px;
+        /* Жестко в одну строку */
+        white-space: nowrap;
+      }
+      .rate-sub {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 40px;
+      }
+      .breakdown {
+        border-top: 1px solid var(--border);
+        padding-top: 20px;
+        margin-bottom: 30px;
+      }
+      .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        /* Выравнивание по центру по вертикали */
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: var(--text-muted);
+        /* Жестко в одну строку */
+        white-space: nowrap;
+        /* Зазор между текстом и цифрами */
+        gap: 15px;
+      }
+      .breakdown-value {
+        font-weight: 600;
+        color: var(--text-main);
+        /* Прижимаем значения вправо */
+        text-align: right;
+      }
+      .btn-support {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        text-decoration: none;
+        padding: 15px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 15px;
+        transition: opacity 0.2s;
+      }
+      .btn-support:hover {
+        opacity: 0.9;
+      }
+
+      /* Скрываем стрелки у инпутов */
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
       }
       input[type="number"] {
-        background: #1e293b;
-        border: 1px solid #334155;
-        color: #fff;
-        transition: all 0.2s;
-      }
-      input[type="number"]:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        -moz-appearance: textfield;
+        appearance: textfield;
       }
     </style>
   </head>
-  <body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div class="glass-panel p-8 rounded-2xl shadow-2xl">
-        <h1 class="text-3xl font-bold mb-2 tracking-tight">MVR Calculator</h1>
-        <p class="text-slate-400 mb-8 text-sm">
+  <body>
+    <div class="container">
+      <div class="left-panel">
+        <h1>MVR Calculator</h1>
+        <p class="subtitle">
           Calculate your true freelance hourly rate to avoid burnout.
         </p>
 
-        <div class="space-y-5">
-          <div>
-            <label class="block text-sm font-semibold text-slate-300 mb-1"
-              >Target Annual Net Income ($)</label
-            >
-            <input
-              type="number"
-              id="targetIncome"
-              value="60000"
-              class="w-full p-3 rounded-lg font-mono text-lg"
-              oninput="calculateRate()"
-            />
+        <div class="input-group">
+          <label>Target Annual Net Income ($)</label>
+          <input type="number" id="net" value="60000" min="0" step="1000" />
+        </div>
+
+        <div class="input-group">
+          <label>Annual Business Expenses ($)</label>
+          <input type="number" id="exp" value="5000" min="0" step="100" />
+        </div>
+
+        <div class="row">
+          <div class="input-group">
+            <label>Weeks Off / Year</label>
+            <input type="number" id="weeksOff" value="12" min="0" max="51" />
           </div>
-          <div>
-            <label class="block text-sm font-semibold text-slate-300 mb-1"
-              >Annual Business Expenses ($)</label
-            >
-            <p class="text-xs text-slate-500 mb-2">
-              Software, internet, marketing, hardware.
-            </p>
-            <input
-              type="number"
-              id="expenses"
-              value="5000"
-              class="w-full p-3 rounded-lg font-mono text-lg"
-              oninput="calculateRate()"
-            />
+          <div class="input-group">
+            <label>Billable Hours / Week</label>
+            <input type="number" id="hours" value="25" min="1" max="168" />
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-300 mb-1"
-                >Weeks Off / Year</label
-              >
-              <input
-                type="number"
-                id="weeksOff"
-                value="4"
-                max="52"
-                class="w-full p-3 rounded-lg font-mono text-lg"
-                oninput="calculateRate()"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-300 mb-1"
-                >Billable Hours / Week</label
-              >
-              <p class="text-xs text-slate-500 mb-2">
-                Exclude admin & sales work.
-              </p>
-              <input
-                type="number"
-                id="billableHours"
-                value="25"
-                max="168"
-                class="w-full p-3 rounded-lg font-mono text-lg"
-                oninput="calculateRate()"
-              />
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-slate-300 mb-1"
-              >Estimated Tax Rate (%)</label
-            >
-            <input
-              type="number"
-              id="taxRate"
-              value="20"
-              max="100"
-              class="w-full p-3 rounded-lg font-mono text-lg"
-              oninput="calculateRate()"
-            />
-          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Estimated Tax Rate (%)</label>
+          <input type="number" id="tax" value="20" min="0" max="99" />
         </div>
       </div>
 
-      <div class="flex flex-col justify-center space-y-6">
-        <div
-          class="glass-panel p-8 rounded-2xl border-l-4 border-blue-500 shadow-2xl"
-        >
-          <h2
-            class="text-lg font-semibold text-slate-400 uppercase tracking-wider mb-2"
-          >
-            Your Minimum Rate
-          </h2>
-          <div
-            class="text-6xl font-black text-white mb-2 tracking-tighter"
-            id="hourlyRate"
-          >
-            $0
-          </div>
-          <p class="text-slate-400">per billable hour</p>
+      <div class="right-panel">
+        <div>
+          <div class="result-header">Your Minimum Rate</div>
+          <div class="rate-display" id="rate">$0</div>
+          <div class="rate-sub">per billable hour</div>
 
-          <div class="mt-8 pt-6 border-t border-slate-700">
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-slate-400">Gross Revenue Needed:</span>
-              <span class="font-mono font-bold text-lg" id="grossRevenue"
-                >$0</span
-              >
+          <div class="breakdown">
+            <div class="breakdown-item">
+              <span>Gross Revenue Needed:</span>
+              <span class="breakdown-value" id="grossNeeded">$0</span>
             </div>
-            <div class="flex justify-between items-center">
-              <span class="text-slate-400">Total Billable Hours/Year:</span>
-              <span class="font-mono font-bold text-lg" id="totalHours">0</span>
+            <div class="breakdown-item">
+              <span>Total Billable Hours/Year:</span>
+              <span class="breakdown-value" id="totalHours">0</span>
             </div>
           </div>
         </div>
@@ -150,48 +229,148 @@
         <a
           href="https://ko-fi.com/devandrewvazh"
           target="_blank"
-          class="block w-full bg-blue-600 hover:bg-blue-500 text-white text-center font-bold py-4 px-6 rounded-xl transition-colors shadow-lg shadow-blue-500/30"
+          rel="noopener noreferrer"
+          class="btn-support"
+          >☕ Buy me a coffee / Support Tool</a
         >
-          ☕ Buy me a coffee / Support Tool
-        </a>
       </div>
     </div>
 
     <script>
-      function calculateRate() {
-        // Получаем значения
-        const targetIncome =
-          parseFloat(document.getElementById("targetIncome").value) || 0;
-        const expenses =
-          parseFloat(document.getElementById("expenses").value) || 0;
-        const weeksOff =
+      const inputs = document.querySelectorAll('input[type="number"]');
+
+      inputs.forEach((input) => {
+        // Запоминаем стартовое значение как легальное
+        input.dataset.oldValue = input.value;
+
+        // Блокируем спецсимволы с клавиатуры на входе
+        input.addEventListener("keydown", function (e) {
+          if (
+            e.key === "-" ||
+            e.key === "+" ||
+            e.key === "e" ||
+            e.key === "E"
+          ) {
+            e.preventDefault();
+          }
+        });
+
+        input.addEventListener("input", function () {
+          // Если пользователь стер все цифры (поле пустое) — разрешаем
+          if (this.value === "") {
+            this.dataset.oldValue = "";
+            calculate();
+            return;
+          }
+
+          let val = parseFloat(this.value);
+          let maxLimit = Infinity;
+
+          // Устанавливаем индивидуальные лимиты для каждого поля
+          if (this.id === "tax") maxLimit = 99;
+          else if (this.id === "weeksOff") maxLimit = 51;
+          else if (this.id === "hours") maxLimit = 168;
+          else if (this.id === "net" || this.id === "exp") maxLimit = 999999999;
+
+          // Если ввели минус копипастом или превысили лимит — откатываем к старому значению
+          if (val < 0 || val > maxLimit) {
+            this.value = this.dataset.oldValue;
+          } else {
+            // Если значение в рамках лимита — фиксируем его как новое легальное
+            this.dataset.oldValue = this.value;
+          }
+
+          calculate();
+        });
+      });
+
+      function calculate() {
+        let net = parseFloat(document.getElementById("net").value) || 0;
+        let exp = parseFloat(document.getElementById("exp").value) || 0;
+        let weeksOff =
           parseFloat(document.getElementById("weeksOff").value) || 0;
-        const billableHours =
-          parseFloat(document.getElementById("billableHours").value) || 0;
-        const taxRate =
-          parseFloat(document.getElementById("taxRate").value) || 0;
+        let hours = parseFloat(document.getElementById("hours").value) || 0;
+        let tax = parseFloat(document.getElementById("tax").value) || 0;
 
-        // Расчеты
-        const taxMultiplier = 1 - taxRate / 100;
-        const grossRevenueNeeded = targetIncome / taxMultiplier + expenses;
-        const workingWeeks = Math.max(0, 52 - weeksOff);
-        const totalBillableHours = workingWeeks * billableHours;
+        let workingWeeks = 52 - weeksOff;
+        let totalHours = workingWeeks * hours;
 
-        let hourlyRate = 0;
-        if (totalBillableHours > 0) {
-          hourlyRate = grossRevenueNeeded / totalBillableHours;
+        let grossNeeded = 0;
+        let rate = 0;
+
+        if (totalHours > 0) {
+          grossNeeded = net / (1 - tax / 100) + exp;
+          rate = grossNeeded / totalHours;
         }
 
-        // Обновление UI
-        document.getElementById("hourlyRate").innerText =
-          "$" + Math.ceil(hourlyRate);
-        document.getElementById("grossRevenue").innerText =
-          "$" + Math.ceil(grossRevenueNeeded).toLocaleString();
-        document.getElementById("totalHours").innerText = totalBillableHours;
-      }
+        document.getElementById("totalHours").innerText =
+          totalHours > 0 ? totalHours.toLocaleString("en-US") : "0";
+        document.getElementById("grossNeeded").innerText =
+          grossNeeded > 0
+            ? "$" + Math.round(grossNeeded).toLocaleString("en-US")
+            : "$0";
+        document.getElementById("rate").innerText =
+          rate > 0 ? "$" + Math.ceil(rate).toLocaleString("en-US") : "$0";
 
-      // Инициализация при загрузке
-      calculateRate();
+        // --- БЕЗОТКАЗНОЕ МАСШТАБИРОВАНИЕ ---
+        const rateEl = document.getElementById("rate");
+        const rightPanel = rateEl.closest(".right-panel");
+
+        // 1. Сбрасываем размер
+        rateEl.style.fontSize = "64px";
+
+        // 2. Отрываем элемент от родителя, чтобы снять все ограничения ширины
+        rateEl.style.position = "absolute";
+        rateEl.style.visibility = "hidden";
+        rateEl.style.width = "auto";
+        void rateEl.offsetWidth; // Принудительная перерисовка
+
+        // 3. Замеряем настоящую, бесконечную ширину текста
+        const trueTextWidth = rateEl.offsetWidth;
+        const maxAllowedWidth = rightPanel.clientWidth - 60; // Минус паддинги 30px с каждой стороны
+
+        // 4. Возвращаем на место
+        rateEl.style.position = "";
+        rateEl.style.visibility = "";
+        rateEl.style.width = "";
+
+        // 5. Если текст физически шире панели — сжимаем пропорционально
+        if (trueTextWidth > maxAllowedWidth && maxAllowedWidth > 0) {
+          let ratio = maxAllowedWidth / trueTextWidth;
+          rateEl.style.fontSize = Math.floor(64 * ratio * 0.95) + "px";
+        }
+
+        // То же самое для мелких строк с деталями (Gross Revenue)
+        document.querySelectorAll(".breakdown-item").forEach((item) => {
+          const label = item.querySelector("span:first-child");
+          const value = item.querySelector(".breakdown-value");
+
+          if (label && value) {
+            value.style.fontSize = "14px";
+
+            // Замеряем настоящую ширину значения
+            value.style.position = "absolute";
+            value.style.visibility = "hidden";
+            value.style.width = "auto";
+            void value.offsetWidth;
+
+            const trueValueWidth = value.offsetWidth;
+            const availableWidth =
+              rightPanel.clientWidth - 60 - label.clientWidth - 15;
+
+            // Возвращаем на место
+            value.style.position = "";
+            value.style.visibility = "";
+            value.style.width = "";
+
+            if (trueValueWidth > availableWidth && availableWidth > 0) {
+              let ratio = availableWidth / trueValueWidth;
+              value.style.fontSize = Math.floor(14 * ratio * 0.95) + "px";
+            }
+          }
+        });
+      }
+      calculate();
     </script>
   </body>
 </html>
