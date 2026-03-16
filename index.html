@@ -40,7 +40,7 @@
       .left-panel,
       .right-panel {
         flex: 1 1 300px;
-        min-width: 0; /* Критически важное свойство для Flexbox, защищает от разрыва верстки */
+        min-width: 0;
         background: var(--panel-bg);
         padding: 30px;
         border-radius: 12px;
@@ -85,6 +85,9 @@
         font-size: 16px;
         outline: none;
         transition: border 0.2s;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
       }
       input:focus {
         border-color: var(--accent);
@@ -111,6 +114,7 @@
         line-height: 1.1;
         margin-bottom: 5px;
         white-space: nowrap;
+        min-height: 70px;
       }
       .rate-sub {
         color: var(--text-muted);
@@ -136,7 +140,6 @@
         font-weight: 600;
         color: var(--text-main);
         text-align: right;
-        min-width: 0;
       }
       .btn-support {
         display: block;
@@ -155,18 +158,10 @@
         opacity: 0.9;
       }
 
-      input[type="number"]::-webkit-inner-spin-button,
-      input[type="number"]::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        appearance: none;
-        margin: 0;
-      }
-      input[type="number"] {
-        -moz-appearance: textfield;
-        appearance: textfield;
-      }
-
       @media (max-width: 768px) {
+        .container {
+          gap: 20px;
+        }
         .left-panel,
         .right-panel {
           min-width: 100%;
@@ -184,28 +179,25 @@
 
         <div class="input-group">
           <label>Target Annual Net Income ($)</label>
-          <input type="number" id="net" value="60000" min="0" step="1000" />
+          <input type="text" inputmode="decimal" id="net" value="60000" />
         </div>
-
         <div class="input-group">
           <label>Annual Business Expenses ($)</label>
-          <input type="number" id="exp" value="5000" min="0" step="100" />
+          <input type="text" inputmode="decimal" id="exp" value="5000" />
         </div>
-
         <div class="row">
           <div class="input-group">
             <label>Weeks Off / Year</label>
-            <input type="number" id="weeksOff" value="12" min="0" max="51" />
+            <input type="text" inputmode="decimal" id="weeksOff" value="12" />
           </div>
           <div class="input-group">
             <label>Billable Hours / Week</label>
-            <input type="number" id="hours" value="25" min="1" max="168" />
+            <input type="text" inputmode="decimal" id="hours" value="25" />
           </div>
         </div>
-
         <div class="input-group">
           <label>Estimated Tax Rate (%)</label>
-          <input type="number" id="tax" value="20" min="0" max="99" />
+          <input type="text" inputmode="decimal" id="tax" value="20" />
         </div>
       </div>
 
@@ -214,7 +206,6 @@
           <div class="result-header">Your Minimum Rate</div>
           <div class="rate-display" id="rate">$0</div>
           <div class="rate-sub">per billable hour</div>
-
           <div class="breakdown">
             <div class="breakdown-item">
               <span>Gross Revenue Needed:</span>
@@ -226,7 +217,6 @@
             </div>
           </div>
         </div>
-
         <a
           href="https://ko-fi.com/devandrewvazh"
           target="_blank"
@@ -238,41 +228,74 @@
     </div>
 
     <script>
-      const inputs = document.querySelectorAll('input[type="number"]');
+      const inputs = document.querySelectorAll("input");
 
       inputs.forEach((input) => {
         input.dataset.oldValue = input.value;
 
-        input.addEventListener("keydown", function (e) {
-          if (
-            e.key === "-" ||
-            e.key === "+" ||
-            e.key === "e" ||
-            e.key === "E"
-          ) {
-            e.preventDefault();
-          }
-        });
-
         input.addEventListener("input", function () {
-          if (this.value === "") {
-            this.dataset.oldValue = "";
+          let val = this.value;
+
+          // 1. Заменяем запятые на точки для универсальности
+          val = val.replace(/,/g, ".");
+
+          // 2. Уничтожаем любой мусор, кроме цифр и точек
+          val = val.replace(/[^0-9.]/g, "");
+
+          // 3. Блокируем ввод нескольких точек подряд (оставляем только первую)
+          const parts = val.split(".");
+          if (parts.length > 2) {
+            val = parts[0] + "." + parts.slice(1).join("");
+          }
+
+          // 4. Ограничиваем количество знаков после запятой
+          const currentParts = val.split(".");
+          if (currentParts[1] !== undefined) {
+            // Для денег и процентов даем 2 знака (центы), для часов и недель — 1 знак
+            let maxDecimals =
+              this.id === "hours" || this.id === "weeksOff" ? 1 : 2;
+            val =
+              currentParts[0] + "." + currentParts[1].substring(0, maxDecimals);
+          }
+
+          // 5. Удаляем ведущие нули (например, 05 -> 5), но оставляем 0.x
+          if (val.length > 1 && val.startsWith("0") && val[1] !== ".") {
+            val = val.replace(/^0+/, "");
+            if (val === "") val = "0"; // Защита от полного затирания
+          }
+
+          this.value = val;
+
+          // Если поле полностью очищено или там только точка — ничего не считаем
+          if (val === "" || val === ".") {
             calculate();
             return;
           }
 
-          let val = parseFloat(this.value);
-          let maxLimit = Infinity;
+          // 6. Математическая проверка лимитов
+          let numVal = parseFloat(val);
+          let maxLimit = 999999999;
 
           if (this.id === "tax") maxLimit = 99;
           else if (this.id === "weeksOff") maxLimit = 51;
           else if (this.id === "hours") maxLimit = 168;
-          else if (this.id === "net" || this.id === "exp") maxLimit = 999999999;
 
-          if (val < 0 || val > maxLimit) {
+          if (numVal > maxLimit) {
             this.value = this.dataset.oldValue;
           } else {
             this.dataset.oldValue = this.value;
+          }
+
+          calculate();
+        });
+
+        // 7. Подчищаем "висячие" точки, если пользователь кликнул в другое место
+        input.addEventListener("blur", function () {
+          if (this.value.endsWith(".")) {
+            this.value = this.value.slice(0, -1);
+          }
+          if (this.value === "") {
+            this.value = "0";
           }
           calculate();
         });
@@ -280,29 +303,25 @@
 
       function scaleText(element, baseSize, maxAllowedWidth) {
         element.style.fontSize = baseSize + "px";
-        element.style.display = "inline-block"; // Снимаем точную ширину контента
-
+        element.style.display = "inline-block";
         const contentWidth = element.scrollWidth;
-
         if (contentWidth > maxAllowedWidth && maxAllowedWidth > 0) {
           let ratio = maxAllowedWidth / contentWidth;
-          element.style.fontSize = Math.floor(baseSize * ratio * 0.95) + "px"; // 0.95 для безопасного отступа
+          element.style.fontSize = Math.floor(baseSize * ratio * 0.95) + "px";
         }
-
-        element.style.display = ""; // Возвращаем стили в исходное состояние
+        element.style.display = "";
       }
 
       function calculate() {
-        let net = parseFloat(document.getElementById("net").value) || 0;
-        let exp = parseFloat(document.getElementById("exp").value) || 0;
-        let weeksOff =
-          parseFloat(document.getElementById("weeksOff").value) || 0;
-        let hours = parseFloat(document.getElementById("hours").value) || 0;
-        let tax = parseFloat(document.getElementById("tax").value) || 0;
+        const getVal = (id) =>
+          parseFloat(document.getElementById(id).value) || 0;
+        const net = getVal("net");
+        const exp = getVal("exp");
+        const weeksOff = getVal("weeksOff");
+        const hours = getVal("hours");
+        const tax = getVal("tax");
 
-        let workingWeeks = 52 - weeksOff;
-        let totalHours = workingWeeks * hours;
-
+        const totalHours = (52 - weeksOff) * hours;
         let grossNeeded = 0;
         let rate = 0;
 
@@ -311,46 +330,29 @@
           rate = grossNeeded / totalHours;
         }
 
-        const totalHoursText =
-          totalHours > 0 ? totalHours.toLocaleString("en-US") : "0";
-        const grossNeededText =
-          grossNeeded > 0
-            ? "$" + Math.round(grossNeeded).toLocaleString("en-US")
-            : "$0";
-        const rateText =
-          rate > 0 ? "$" + Math.ceil(rate).toLocaleString("en-US") : "$0";
+        // Вывод с точным учетом дробных частей
+        document.getElementById("totalHours").innerText =
+          totalHours.toLocaleString("en-US", { maximumFractionDigits: 1 });
+        document.getElementById("grossNeeded").innerText =
+          "$" +
+          grossNeeded.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
         const rateEl = document.getElementById("rate");
-        const totalHoursEl = document.getElementById("totalHours");
-        const grossNeededEl = document.getElementById("grossNeeded");
-        const rightPanel = rateEl.closest(".right-panel");
+        rateEl.innerText = "$" + Math.ceil(rate).toLocaleString("en-US");
 
-        rateEl.innerText = rateText;
-        totalHoursEl.innerText = totalHoursText;
-        grossNeededEl.innerText = grossNeededText;
-
-        // Высчитываем ширину рамки с учетом padding (30px + 30px = 60px)
-        const maxPanelWidth = rightPanel.clientWidth - 60;
-
-        // Масштабируем главную цифру
+        const maxPanelWidth = rateEl.closest(".right-panel").clientWidth - 60;
         scaleText(rateEl, 64, maxPanelWidth);
 
-        // Масштабируем мелкие цифры
         document.querySelectorAll(".breakdown-item").forEach((item) => {
           const label = item.querySelector("span:first-child");
           const value = item.querySelector(".breakdown-value");
-
           if (label && value) {
-            const availableWidth = maxPanelWidth - label.clientWidth - 15;
-            scaleText(value, 14, availableWidth);
+            scaleText(value, 14, maxPanelWidth - label.clientWidth - 20);
           }
         });
       }
 
-      // Пересчитываем шрифты при повороте экрана устройства
       window.addEventListener("resize", calculate);
-
-      // Инициализация
       calculate();
     </script>
   </body>
