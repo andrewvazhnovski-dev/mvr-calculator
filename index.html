@@ -39,8 +39,8 @@
       }
       .left-panel,
       .right-panel {
-        flex: 1;
-        min-width: 300px;
+        flex: 1 1 300px;
+        min-width: 0; /* Критически важное свойство для Flexbox, защищает от разрыва верстки */
         background: var(--panel-bg);
         padding: 30px;
         border-radius: 12px;
@@ -94,7 +94,6 @@
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        /* Защита от распирания контейнера */
         overflow: hidden;
       }
       .result-header {
@@ -111,7 +110,6 @@
         color: var(--text-main);
         line-height: 1.1;
         margin-bottom: 5px;
-        /* Жестко в одну строку */
         white-space: nowrap;
       }
       .rate-sub {
@@ -127,21 +125,18 @@
       .breakdown-item {
         display: flex;
         justify-content: space-between;
-        /* Выравнивание по центру по вертикали */
         align-items: center;
         margin-bottom: 12px;
         font-size: 14px;
         color: var(--text-muted);
-        /* Жестко в одну строку */
         white-space: nowrap;
-        /* Зазор между текстом и цифрами */
         gap: 15px;
       }
       .breakdown-value {
         font-weight: 600;
         color: var(--text-main);
-        /* Прижимаем значения вправо */
         text-align: right;
+        min-width: 0;
       }
       .btn-support {
         display: block;
@@ -160,7 +155,6 @@
         opacity: 0.9;
       }
 
-      /* Скрываем стрелки у инпутов */
       input[type="number"]::-webkit-inner-spin-button,
       input[type="number"]::-webkit-outer-spin-button {
         -webkit-appearance: none;
@@ -170,6 +164,13 @@
       input[type="number"] {
         -moz-appearance: textfield;
         appearance: textfield;
+      }
+
+      @media (max-width: 768px) {
+        .left-panel,
+        .right-panel {
+          min-width: 100%;
+        }
       }
     </style>
   </head>
@@ -240,10 +241,8 @@
       const inputs = document.querySelectorAll('input[type="number"]');
 
       inputs.forEach((input) => {
-        // Запоминаем стартовое значение как легальное
         input.dataset.oldValue = input.value;
 
-        // Блокируем спецсимволы с клавиатуры на входе
         input.addEventListener("keydown", function (e) {
           if (
             e.key === "-" ||
@@ -256,7 +255,6 @@
         });
 
         input.addEventListener("input", function () {
-          // Если пользователь стер все цифры (поле пустое) — разрешаем
           if (this.value === "") {
             this.dataset.oldValue = "";
             calculate();
@@ -266,23 +264,33 @@
           let val = parseFloat(this.value);
           let maxLimit = Infinity;
 
-          // Устанавливаем индивидуальные лимиты для каждого поля
           if (this.id === "tax") maxLimit = 99;
           else if (this.id === "weeksOff") maxLimit = 51;
           else if (this.id === "hours") maxLimit = 168;
           else if (this.id === "net" || this.id === "exp") maxLimit = 999999999;
 
-          // Если ввели минус копипастом или превысили лимит — откатываем к старому значению
           if (val < 0 || val > maxLimit) {
             this.value = this.dataset.oldValue;
           } else {
-            // Если значение в рамках лимита — фиксируем его как новое легальное
             this.dataset.oldValue = this.value;
           }
-
           calculate();
         });
       });
+
+      function scaleText(element, baseSize, maxAllowedWidth) {
+        element.style.fontSize = baseSize + "px";
+        element.style.display = "inline-block"; // Снимаем точную ширину контента
+
+        const contentWidth = element.scrollWidth;
+
+        if (contentWidth > maxAllowedWidth && maxAllowedWidth > 0) {
+          let ratio = maxAllowedWidth / contentWidth;
+          element.style.fontSize = Math.floor(baseSize * ratio * 0.95) + "px"; // 0.95 для безопасного отступа
+        }
+
+        element.style.display = ""; // Возвращаем стили в исходное состояние
+      }
 
       function calculate() {
         let net = parseFloat(document.getElementById("net").value) || 0;
@@ -303,73 +311,46 @@
           rate = grossNeeded / totalHours;
         }
 
-        document.getElementById("totalHours").innerText =
+        const totalHoursText =
           totalHours > 0 ? totalHours.toLocaleString("en-US") : "0";
-        document.getElementById("grossNeeded").innerText =
+        const grossNeededText =
           grossNeeded > 0
             ? "$" + Math.round(grossNeeded).toLocaleString("en-US")
             : "$0";
-        document.getElementById("rate").innerText =
+        const rateText =
           rate > 0 ? "$" + Math.ceil(rate).toLocaleString("en-US") : "$0";
 
-        // --- БЕЗОТКАЗНОЕ МАСШТАБИРОВАНИЕ ---
         const rateEl = document.getElementById("rate");
+        const totalHoursEl = document.getElementById("totalHours");
+        const grossNeededEl = document.getElementById("grossNeeded");
         const rightPanel = rateEl.closest(".right-panel");
 
-        // 1. Сбрасываем размер
-        rateEl.style.fontSize = "64px";
+        rateEl.innerText = rateText;
+        totalHoursEl.innerText = totalHoursText;
+        grossNeededEl.innerText = grossNeededText;
 
-        // 2. Отрываем элемент от родителя, чтобы снять все ограничения ширины
-        rateEl.style.position = "absolute";
-        rateEl.style.visibility = "hidden";
-        rateEl.style.width = "auto";
-        void rateEl.offsetWidth; // Принудительная перерисовка
+        // Высчитываем ширину рамки с учетом padding (30px + 30px = 60px)
+        const maxPanelWidth = rightPanel.clientWidth - 60;
 
-        // 3. Замеряем настоящую, бесконечную ширину текста
-        const trueTextWidth = rateEl.offsetWidth;
-        const maxAllowedWidth = rightPanel.clientWidth - 60; // Минус паддинги 30px с каждой стороны
+        // Масштабируем главную цифру
+        scaleText(rateEl, 64, maxPanelWidth);
 
-        // 4. Возвращаем на место
-        rateEl.style.position = "";
-        rateEl.style.visibility = "";
-        rateEl.style.width = "";
-
-        // 5. Если текст физически шире панели — сжимаем пропорционально
-        if (trueTextWidth > maxAllowedWidth && maxAllowedWidth > 0) {
-          let ratio = maxAllowedWidth / trueTextWidth;
-          rateEl.style.fontSize = Math.floor(64 * ratio * 0.95) + "px";
-        }
-
-        // То же самое для мелких строк с деталями (Gross Revenue)
+        // Масштабируем мелкие цифры
         document.querySelectorAll(".breakdown-item").forEach((item) => {
           const label = item.querySelector("span:first-child");
           const value = item.querySelector(".breakdown-value");
 
           if (label && value) {
-            value.style.fontSize = "14px";
-
-            // Замеряем настоящую ширину значения
-            value.style.position = "absolute";
-            value.style.visibility = "hidden";
-            value.style.width = "auto";
-            void value.offsetWidth;
-
-            const trueValueWidth = value.offsetWidth;
-            const availableWidth =
-              rightPanel.clientWidth - 60 - label.clientWidth - 15;
-
-            // Возвращаем на место
-            value.style.position = "";
-            value.style.visibility = "";
-            value.style.width = "";
-
-            if (trueValueWidth > availableWidth && availableWidth > 0) {
-              let ratio = availableWidth / trueValueWidth;
-              value.style.fontSize = Math.floor(14 * ratio * 0.95) + "px";
-            }
+            const availableWidth = maxPanelWidth - label.clientWidth - 15;
+            scaleText(value, 14, availableWidth);
           }
         });
       }
+
+      // Пересчитываем шрифты при повороте экрана устройства
+      window.addEventListener("resize", calculate);
+
+      // Инициализация
       calculate();
     </script>
   </body>
